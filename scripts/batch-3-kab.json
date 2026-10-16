@@ -1,0 +1,68 @@
+[
+ {
+  "type": "ia",
+  "id": "posiespopulaire00hanogoog",
+  "language": "kab",
+  "title": "Poésies populaires de la Kabylie du Jurjura (texte kabyle et traduction)",
+  "author": "Adolphe Hanoteau",
+  "year": 1867,
+  "theme": "poésie",
+  "summary": "Poèmes kabyles (transcription latine du XIXe s.) avec traduction française. Numérisation Google, OCR brut.",
+  "note": "OCR brut"
+ },
+ {
+  "type": "ia",
+  "id": "unepremirean00bouluoft",
+  "language": "kab",
+  "title": "Une première année de langue kabyle (dialecte zouaoua)",
+  "author": "Si Ammar ben Saïd Boulifa",
+  "year": 1897,
+  "theme": "histoire",
+  "summary": "Manuel de kabyle de Boulifa, avec textes, dialogues et proverbes kabyles traduits en français. OCR brut.",
+  "note": "OCR brut"
+ },
+ {
+  "type": "ia",
+  "id": "chansons-kabyles-de-smail-azikkiou_202605",
+  "language": "kab",
+  "title": "Chansons kabyles de Smaïl Azikkiou",
+  "author": "Jean-Dominique Luciani (éd.)",
+  "year": 1899,
+  "theme": "poésie",
+  "summary": "Poèmes du poète kabyle Smaïl Azikkiou, texte kabyle et traduction française. OCR brut.",
+  "note": "OCR brut"
+ },
+ {
+  "type": "ia",
+  "id": "manueldelanguek00bassgoog",
+  "language": "kab",
+  "title": "Manuel de langue kabyle (dialecte zouaoua) : grammaire, bibliographie, chrestomathie et lexique",
+  "author": "René Basset",
+  "year": 1887,
+  "theme": "contes",
+  "summary": "Grammaire et chrestomathie : contes et textes kabyles avec lexique. OCR brut.",
+  "note": "OCR brut"
+ },
+ {
+  "type": "ia",
+  "id": "lesfourberiesde00bassgoog",
+  "language": "kab",
+  "title": "Les fourberies de Si Djeh'a (Tiḥeṛciwin n Si Ǧeḥḥa)",
+  "author": "Auguste Mouliéras",
+  "year": 1892,
+  "theme": "contes",
+  "summary": "Contes facétieux de Djeha, texte kabyle et traduction française (Mouliéras, annoté par René Basset). OCR brut.",
+  "note": "OCR brut"
+ },
+ {
+  "type": "ia",
+  "id": "loqmnberbereav00luqmuoft",
+  "language": "kab",
+  "title": "Loqmân berbère, avec quatre glossaires",
+  "author": "René Basset",
+  "year": 1890,
+  "theme": "contes",
+  "summary": "Fables de Loqmân dans plusieurs parlers berbères (dont le kabyle), avec glossaires. OCR brut.",
+  "note": "OCR brut"
+ }
+]

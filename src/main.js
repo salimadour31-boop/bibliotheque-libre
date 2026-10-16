@@ -8,7 +8,7 @@ import '@fontsource/noto-sans-tifinagh/400.css';
 import './style.css';
 import { t, setLang, getLang, applyDir, UI_LANGS, themeName } from './i18n.js';
 import { toTifinagh, toArabicScript } from './translit.js';
-import { ttsSupported, splitSentences, pickVoices, Speaker } from './tts.js';
+import { ttsSupported, splitSentences, pickVoices, Speaker, loadVoices, installHelp } from './tts.js';
 import { idbGet, idbSet, idbDel } from './db.js';
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -18,7 +18,14 @@ const LS = { get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?
 const LANG_LABEL = { fr: 'FR', ar: 'AR', kab: 'KAB', en: 'EN' };
 const NLLB = { fr: 'fra_Latn', ar: 'arb_Arab', kab: 'kab_Latn', en: 'eng_Latn' };
 const BOOK_CACHE = 'books-v1';
-let catalogue = [];
+let index = null; const loaded = {}; let catalogue = [];
+const SRC = { pg: 'Project Gutenberg', ia: 'Internet Archive' };
+const LIC = {
+  pg: 'Domaine public (États-Unis ; auteur mort avant 1956) — licence Project Gutenberg conservée dans le fichier',
+  ws: 'Domaine public (œuvre) ; transcription Wikisource CC BY-SA 4.0',
+  'ia-nic': 'Domaine public — Internet Archive « NOT_IN_COPYRIGHT », auteur mort avant 1956',
+  'ia-pdm': 'Domaine public — Public Domain Mark (Internet Archive), auteur mort avant 1956',
+};
 let deferredInstall = null;
 const state = LS.get('libState', { q: '', lang: 'all', theme: 'all', sort: 'title', byAuthor: false });
 const prefs = LS.get('readerPrefs', { size: 19, font: 'serif', theme: 'light', lh: 1.7, kabScript: 'latn', rate: 1, pitch: 1, volume: 1, voice: '' });
@@ -28,13 +35,47 @@ const savePrefs = () => LS.set('readerPrefs', prefs);
 applyDir();
 document.body.dataset.theme = prefs.theme;
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; $('#install')?.removeAttribute('hidden'); });
-if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('./sw.js').catch(() => {});
-
-async function loadCatalogue() {
-  const r = await fetch('./catalogue.json'); catalogue = await r.json();
-  catalogue.forEach((b) => { delete b.key; });
+if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  // Nouvelle version déployée : le nouveau service worker prend la main et on recharge une fois (évite de rester sur une ancienne version).
+  const had = !!navigator.serviceWorker.controller; let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (had && !reloaded) { reloaded = true; location.reload(); } });
+  navigator.serviceWorker.register('./sw.js').then((r) => r.update()).catch(() => {});
 }
-async function isOffline(b) { try { const c = await caches.open(BOOK_CACHE); return !!(await c.match(new URL(b.file, location.href).href)); } catch { return false; } }
+
+// Catalogue découpé : catalogue/index.json + catalogue/<langue>-<page>.json, chargés à la demande.
+async function loadCatalogue() { index = await (await fetch('./catalogue/index.json')).json(); }
+function expand(e, l) {
+  const src = e.src?.startsWith('ws') ? `Wikisource (${e.src.slice(3) || l})` : SRC[e.src] || e.src;
+  return { id: e.id, title: e.t, author: e.a || '—', language: l, year: e.y ?? null, cover: e.c ? index.langs[l].base + e.c : null, summary: e.s || '', theme: e.th || 'roman',
+    source: src, license: LIC[e.lic] || e.lic, url: e.u, file: index.langs[l].base + e.f, note: e.n, size: e.z };
+}
+async function ensureLang(l) {
+  if (loaded[l]) return loaded[l];
+  const info = index.langs[l];
+  const parts = await Promise.all(Array.from({ length: info.pages }, (_, i) => fetch(`./catalogue/${l}-${i}.json`).then((r) => r.json())));
+  loaded[l] = parts.flat().map((e) => expand(e, l));
+  catalogue = Object.values(loaded).flat();
+  return loaded[l];
+}
+const ensureAll = () => Promise.all(Object.keys(index.langs).map(ensureLang));
+const bookUrl = (b) => new URL(b.file, location.href).href;
+async function isOffline(b) { try { const c = await caches.open(BOOK_CACHE); return !!(await c.match(bookUrl(b))); } catch { return false; } }
+async function fetchBook(b) {
+  // Cache d'abord (livres téléchargés pour lecture hors ligne), sinon dépôt de données (GitHub Pages).
+  let r = null;
+  try { const c = await caches.open(BOOK_CACHE); r = await c.match(bookUrl(b)); } catch {}
+  if (!r) { r = await fetch(bookUrl(b)); if (!r.ok) throw new Error('HTTP ' + r.status); }
+  return decodeBook(await r.arrayBuffer());
+}
+// Les textes sont stockés compressés (.txt.gz) dans les dépôts de données : décompression locale (DecompressionStream).
+async function decodeBook(buf) {
+  const u8 = new Uint8Array(buf);
+  if (u8[0] === 0x1f && u8[1] === 0x8b) {
+    const stream = new Blob([u8]).stream().pipeThrough(new DecompressionStream('gzip'));
+    return new Response(stream).text();
+  }
+  return new TextDecoder('utf-8').decode(u8);
+}
 
 function header(extra = '') {
   return `<header class="top"><a href="#/" class="brand"><img src="icon.svg" alt="" width="32" height="32"><span>${t('app')}</span></a>
@@ -55,37 +96,53 @@ function filtered() {
     && (!q || norm(b.title + ' ' + b.author + ' ' + b.summary).includes(q)));
   const k = { title: (b) => b.title, author: (b) => b.author, year: (b) => b.year ?? 9999, lang: (b) => b.language }[state.sort];
   list.sort((a, b) => { const x = k(a), y = k(b); return typeof x === 'number' ? x - y : String(x).localeCompare(String(y), getLang()); });
+  if (q) { const hit = (b) => (norm(b.title + ' ' + b.author).includes(q) ? 0 : 1); list.sort((a, b) => hit(a) - hit(b)); } // titre/auteur avant résumé
   return list;
 }
 function card(b) {
   const rtl = b.language === 'ar';
   const cover = b.cover ? `<img class="cover" src="${esc(b.cover)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'cover ph',textContent:this.dataset.l}))" data-l="${esc(b.title[0])}">` : `<div class="cover ph l-${b.language}">${esc(b.title.trim()[0])}</div>`;
-  return `<article class="card"><a href="#/book/${encodeURIComponent(b.id)}" class="card-link">${cover}
+  return `<article class="card"><a href="#/book/${b.language}/${encodeURIComponent(b.id)}" class="card-link">${cover}
   <div class="card-body"><h3 dir="${rtl ? 'rtl' : 'auto'}" lang="${b.language}">${esc(b.title)}</h3><p class="author" dir="auto">${esc(b.author)}${b.year ? ` · ${b.year < 0 ? -b.year + ' av. J.-C.' : b.year}` : ''}</p>
   <p class="tags"><span class="badge l-${b.language}">${LANG_LABEL[b.language]}</span><span class="badge">${esc(themeName(b.theme))}</span>${b.note ? `<span class="badge warn">${esc(t('ocr'))}</span>` : ''}<span class="badge ok off-${esc(b.id)}" hidden>⤓ ${t('offline')}</span></p>
   <p class="summary" dir="auto">${esc(b.summary).slice(0, 220)}${b.summary?.length > 220 ? '…' : ''}</p></div></a></article>`;
 }
 function renderLibrary() {
-  const themes = [...new Set(catalogue.map((b) => b.theme))];
-  const counts = Object.fromEntries(Object.keys(LANG_LABEL).map((l) => [l, catalogue.filter((b) => b.language === l).length]));
+  const themes = index.themes;
+  const counts = Object.fromEntries(Object.keys(LANG_LABEL).map((l) => [l, index.langs[l]?.count || 0]));
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
   app.innerHTML = header() + `<main class="lib"><p class="tagline">${t('tagline')}</p>
   <div class="filters"><input id="q" type="search" placeholder="${t('search')}" value="${esc(state.q)}" aria-label="${t('search')}">
-  <div class="chips" role="group">${['all', 'kab', 'ar', 'fr', 'en'].map((l) => `<button class="chip ${state.lang === l ? 'on' : ''}" data-lang="${l}">${l === 'all' ? t('all') : LANG_LABEL[l]}${l !== 'all' ? ` <small>${counts[l]}</small>` : ''}</button>`).join('')}</div>
+  <div class="chips" role="group">${['all', 'kab', 'ar', 'fr', 'en'].map((l) => `<button class="chip ${state.lang === l ? 'on' : ''}" data-lang="${l}">${l === 'all' ? t('all') + ` <small>${total}</small>` : LANG_LABEL[l]}${l !== 'all' ? ` <small>${counts[l]}</small>` : ''}</button>`).join('')}</div>
   <div class="row"><select id="theme" aria-label="theme"><option value="all">${t('allThemes')}</option>${themes.map((th) => `<option value="${esc(th)}" ${state.theme === th ? 'selected' : ''}>${esc(themeName(th))}</option>`).join('')}</select>
   <select id="sort" aria-label="${t('sort')}">${['title', 'author', 'year', 'lang'].map((s) => `<option value="${s}" ${state.sort === s ? 'selected' : ''}>${t('sort')} : ${t('sort' + s[0].toUpperCase() + s.slice(1))}</option>`).join('')}</select>
   <button id="byAuthor" class="btn ${state.byAuthor ? 'on' : ''}">${state.byAuthor ? t('grid') : t('byAuthor')}</button></div></div>
   <div id="results"></div><footer class="foot"><details><summary>${t('about')}</summary><p>${t('aboutText')}</p></details></footer></main>`;
   bindHeader();
-  const draw = async () => {
-    const list = filtered(); const el = $('#results');
+  const PAGE = 48; let shown = PAGE; let timer;
+  const draw = async (more = false) => {
+    const el = $('#results');
+    if (!more) shown = PAGE;
+    const need = state.lang === 'all' ? Object.keys(index.langs) : [state.lang];
+    if (need.some((l) => !loaded[l])) { el.innerHTML = `<p class="loading">${t('loading')}</p>`; await Promise.all(need.map(ensureLang)); }
+    if (!el.isConnected) return; // l'utilisateur a quitté la page pendant le chargement
+    const list = filtered();
     if (!list.length) { el.innerHTML = `<p class="empty">${t('none')}</p>`; return; }
+    let html;
     if (state.byAuthor) {
       const g = {}; list.forEach((b) => (g[b.author] ??= []).push(b));
-      el.innerHTML = Object.keys(g).sort((a, b) => a.localeCompare(b)).map((a) => `<section class="author-group"><h2 dir="auto">${esc(a)} <small>(${g[a].length})</small></h2><div class="grid">${g[a].map(card).join('')}</div></section>`).join('');
-    } else el.innerHTML = `<p class="count">${list.length} ${t('books')}</p><div class="grid">${list.map(card).join('')}</div>`;
-    for (const b of list) if (await isOffline(b)) document.querySelectorAll('.off-' + CSS.escape(b.id)).forEach((x) => (x.hidden = false));
+      const authors = Object.keys(g).sort((x, y) => x.localeCompare(y)); const nA = Math.ceil(shown / 6);
+      html = `<p class="count">${authors.length} · ${list.length} ${t('books')}</p>` + authors.slice(0, nA).map((a) => `<section class="author-group"><h2 dir="auto">${esc(a)} <small>(${g[a].length})</small></h2><div class="grid">${g[a].slice(0, 24).map(card).join('')}</div></section>`).join('');
+      if (authors.length > nA) html += `<button id="more" class="btn big more">${t('more')}</button>`;
+    } else {
+      html = `<p class="count">${list.length} ${t('books')}</p><div class="grid">${list.slice(0, shown).map(card).join('')}</div>`;
+      if (list.length > shown) html += `<button id="more" class="btn big more">${t('more')} (${list.length - shown})</button>`;
+    }
+    el.innerHTML = html;
+    const mb = $('#more'); if (mb) mb.onclick = () => { const y = scrollY; shown += PAGE; draw(true).then(() => scrollTo(0, y)); };
+    try { const keys = new Set((await (await caches.open(BOOK_CACHE)).keys()).map((r) => r.url)); for (const b of list.slice(0, shown)) if (keys.has(bookUrl(b))) document.querySelectorAll('.off-' + CSS.escape(b.id)).forEach((x) => (x.hidden = false)); } catch {}
   };
-  $('#q').oninput = (e) => { state.q = e.target.value; saveState(); draw(); };
+  $('#q').oninput = (e) => { state.q = e.target.value; saveState(); clearTimeout(timer); timer = setTimeout(draw, 200); };
   app.querySelectorAll('.chip').forEach((c) => (c.onclick = () => { state.lang = c.dataset.lang; saveState(); renderLibrary(); }));
   $('#theme').onchange = (e) => { state.theme = e.target.value; saveState(); draw(); };
   $('#sort').onchange = (e) => { state.sort = e.target.value; saveState(); draw(); };
@@ -110,12 +167,13 @@ function displayText(s, lang) {
 }
 function scriptDir(lang) { return lang === 'ar' || (lang === 'kab' && prefs.kabScript === 'arab') ? 'rtl' : 'ltr'; }
 
-async function renderReader(id) {
+async function renderReader(lang, id) {
+  if (lang && index.langs[lang]) await ensureLang(lang); else await ensureAll();
   const b = catalogue.find((x) => x.id === id); if (!b) { location.hash = '#/'; return; }
   speaker?.stop();
   app.innerHTML = header() + `<main class="reader-wrap"><p class="loading">${t('loading')}</p></main>`; bindHeader();
   let text;
-  try { const r = await fetch(b.file); if (!r.ok) throw new Error(r.status); text = await r.text(); }
+  try { text = await fetchBook(b); }
   catch (e) { app.querySelector('.loading').textContent = '⚠ ' + e.message; return; }
   const paras = splitParas(text);
   const trKey = (tgt, model) => `${b.id}|${tgt}|${model}`;
@@ -160,7 +218,7 @@ async function renderReader(id) {
   $('#ff').onchange = (e) => { prefs.font = e.target.value; if (b.language === 'ar') LS.set('fontChosen:ar', 1); applyPrefs(); };
   applyPrefs();
 
-  $('#dl').onclick = async () => { try { const c = await caches.open(BOOK_CACHE); await c.add(new URL(b.file, location.href).href); $('#dl').textContent = '✓ ' + t('downloaded'); } catch (e) { $('#dl').textContent = '⚠ ' + e.message; } };
+  $('#dl').onclick = async () => { try { const c = await caches.open(BOOK_CACHE); await c.add(bookUrl(b)); $('#dl').textContent = '✓ ' + t('downloaded'); } catch (e) { $('#dl').textContent = '⚠ ' + e.message; } };
   if (await isOffline(b)) $('#dl').textContent = '✓ ' + t('downloaded');
 
   // Rendu du texte (paragraphes)
@@ -185,7 +243,7 @@ async function renderReader(id) {
   let st; window.onscroll = () => { clearTimeout(st); st = setTimeout(() => { const i = currentPara(); if (reader?.b === b) LS.set('pos:' + b.id, i); }, 300); };
 
   setupBookmarks(b); setupTTS(b); setupTranslate(b, trKey);
-  $('#viewSel').onclick = (e) => { const v = e.target.dataset.v; if (!v) return; reader.view = v; segOn(); drawText(); };
+  $('#viewSel').onclick = (e) => { const v = e.target.dataset.v; if (!v) return; reader.ttsStop?.(); reader.view = v; segOn(); drawText(); reader.fillVoices?.(); };
   const segOn = () => $('#viewSel').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.v === reader.view));
   reader.segOn = segOn;
 }
@@ -214,39 +272,52 @@ let speaker = null;
 function setupTTS(b) {
   const el = $('#p-tts');
   if (!ttsSupported()) { el.innerHTML = `<p>${t('noTTS')}</p>`; return; }
-  const tts = { para: 0, sent: 0, sents: [], lang: b.language, src: 'orig' };
-  speaker = new Speaker({ onEnd: () => step(1, true), onError: (e) => toast('TTS : ' + e) });
-  el.innerHTML = `<div class="tts-ctrl"><button class="btn" id="tPrev" title="${t('prev')}">⏮</button><button class="btn big" id="tPlay">▶ ${t('play')}</button><button class="btn" id="tStop" title="${t('stop')}">⏹</button><button class="btn" id="tNext" title="${t('next')}">⏭</button></div>
-   <p id="tWarn" class="warn-txt" hidden></p>
+  const tts = { para: 0, sent: 0, sents: [], started: false };
+  speaker = new Speaker({ onEnd: () => step(1, true), onError: (e) => { setPlayBtn(false); toast('TTS : ' + e); } });
+  prefs.voices ??= {};
+  el.innerHTML = `<div class="tts-ctrl"><button class="btn" id="tPrev" title="${t('prev')}" aria-label="${t('prev')}">⏮</button><button class="btn big" id="tPlay">▶ ${t('play')}</button><button class="btn" id="tStop" title="${t('stop')}" aria-label="${t('stop')}">⏹</button><button class="btn" id="tNext" title="${t('next')}" aria-label="${t('next')}">⏭</button></div>
+   <div id="tWarn" class="warn-txt" hidden></div>
+   <label id="tSrcL" hidden>${t('readWhat')} <select id="tSrc"><option value="orig">${t('original')}</option><option value="tr">${t('translation')}</option></select></label>
    <label>${t('voice')} <select id="tVoice"></select></label>
    <label>${t('rate')} <input id="tRate" type="range" min="0.5" max="2" step="0.1" value="${prefs.rate}"></label>
    <label>${t('pitch')} <input id="tPitch" type="range" min="0.5" max="2" step="0.1" value="${prefs.pitch}"></label>
    <label>${t('volume')} <input id="tVol" type="range" min="0" max="1" step="0.1" value="${prefs.volume}"></label>
-   <label>${t('sleep')} <select id="tSleep"><option value="0">${t('sleepOff')}</option>${[5, 10, 15, 30, 45, 60].map((m) => `<option value="${m}">${m} ${t('min')}</option>`).join('')}</select></label>`;
+   <label>${t('sleep')} <select id="tSleep"><option value="0">${t('sleepOff')}</option>${[5, 10, 15, 30, 45, 60].map((m) => `<option value="${m}">${m} ${t('min')}</option>`).join('')}</select></label>
+   <button class="btn" id="tTest">🔈 ${t('testVoice')}</button>`;
+  const useTr = () => reader.tr && reader.trLang && (reader.view === 'tr' || (reader.view === 'bi' && $('#tSrc').value === 'tr'));
+  const readLang = () => (useTr() ? reader.trLang : b.language);
   const fillVoices = () => {
-    const readLang = reader.view === 'tr' && reader.trLang ? reader.trLang : b.language; tts.lang = readLang;
-    const { list, fallback } = pickVoices(readLang); const sel = $('#tVoice'); if (!sel) return;
-    sel.innerHTML = list.map((v) => `<option value="${esc(v.name)}">${esc(v.name)} (${esc(v.lang)})</option>`).join('');
-    if (list.some((v) => v.name === prefs.voice)) sel.value = prefs.voice;
-    speaker.opts.voice = list.find((v) => v.name === sel.value) || null; speaker.opts.lang = readLang;
-    const w = $('#tWarn'); w.hidden = !(fallback || !list.length); w.textContent = !list.length ? t('noVoices') : t('kabWarn');
+    const lang = readLang(); const sel = $('#tVoice'); if (!sel) return;
+    $('#tSrcL').hidden = !(reader.tr && reader.view === 'bi');
+    const { list, all, fallback, missing } = pickVoices(lang);
+    const others = all.filter((v) => !list.includes(v));
+    sel.innerHTML = (list.length ? `<optgroup label="${LANG_LABEL[lang]}">${list.map((v) => `<option value="${esc(v.name)}">${esc(v.name)} (${esc(v.lang)})</option>`).join('')}</optgroup>` : `<option value="">— ${t('noVoiceLang')} —</option>`)
+      + (others.length ? `<optgroup label="${t('otherVoices')}">${others.map((v) => `<option value="${esc(v.name)}">${esc(v.name)} (${esc(v.lang)})</option>`).join('')}</optgroup>` : '');
+    const saved = prefs.voices[lang]; if (saved && all.some((v) => v.name === saved)) sel.value = saved; else if (list[0]) sel.value = list[0].name;
+    speaker.opts.voice = all.find((v) => v.name === sel.value) || null; speaker.opts.lang = lang;
+    const w = $('#tWarn');
+    if (!all.length) { w.hidden = false; w.innerHTML = `${t('noVoices')}<br><small>${esc(installHelp())}</small>`; }
+    else if (fallback) { w.hidden = false; w.textContent = t('kabWarn'); }
+    else if (missing) { w.hidden = false; w.innerHTML = `${t('noVoiceFor')} ${LANG_LABEL[lang]}. ${t('fallbackHint')}<br><small>${esc(lang === 'ar' ? installHelp() : installHelp().replace(/arabe|Arabe|العربية/g, LANG_LABEL[lang]))}</small>`; }
+    else w.hidden = true;
   };
-  speechSynthesis.onvoiceschanged = fillVoices; fillVoices(); reader.fillVoices = fillVoices;
+  loadVoices().then(fillVoices); speechSynthesis.addEventListener('voiceschanged', fillVoices); fillVoices(); reader.fillVoices = fillVoices;
   Object.assign(speaker.opts, { rate: prefs.rate, pitch: prefs.pitch, volume: prefs.volume });
-  $('#tVoice').onchange = (e) => { prefs.voice = e.target.value; savePrefs(); fillVoices(); };
+  $('#tVoice').onchange = (e) => { prefs.voices[readLang()] = e.target.value; savePrefs(); fillVoices(); if (speaker.playing) sayCurrent(); };
+  $('#tSrc').onchange = () => { stop(); fillVoices(); };
   for (const [id, k] of [['tRate', 'rate'], ['tPitch', 'pitch'], ['tVol', 'volume']]) $('#' + id).oninput = (e) => { prefs[k] = speaker.opts[k] = +e.target.value; savePrefs(); };
   $('#tSleep').onchange = (e) => speaker.sleep(+e.target.value, () => { setPlayBtn(false); clearHi(); });
-  const paraText = (i) => (reader.view !== 'orig' && reader.tr?.[i] != null && reader.view === 'tr') ? reader.tr[i] : reader.paras[i];
-  const paraEl = (i) => app.querySelector(reader.view === 'tr' && reader.tr?.[i] != null ? `.para.tr[data-i="${i}"]` : `.para:not(.tr)[data-i="${i}"]`);
-  function clearHi() { app.querySelectorAll('.para.speaking').forEach((p) => { p.classList.remove('speaking'); if (p.dataset.orig) { p.innerHTML = p.dataset.orig; delete p.dataset.orig; } }); }
+  $('#tTest').onclick = () => { const s = { fr: 'Bonjour, ceci est un essai de voix.', en: 'Hello, this is a voice test.', ar: 'مرحبا، هذا اختبار للصوت.', kab: 'Azul, wagi d asekyed n taɣect.' }[readLang()]; speaker.playing = true; speaker.cb.onEnd = () => { speaker.playing = false; speaker.cb.onEnd = () => step(1, true); }; speaker.speak(s); };
+  const paraText = (i) => (useTr() && reader.tr[i] != null ? reader.tr[i] : reader.paras[i]);
+  const paraEl = (i) => app.querySelector(useTr() && reader.tr[i] != null ? `.para.tr[data-i="${i}"]` : `.para:not(.tr)[data-i="${i}"]`);
+  function clearHi() { app.querySelectorAll('.para.speaking').forEach((p) => { p.classList.remove('speaking'); if (p.dataset.orig != null) { p.innerHTML = p.dataset.orig; delete p.dataset.orig; } }); }
   function highlight() {
     clearHi(); const p = paraEl(tts.para); if (!p) return;
     p.classList.add('speaking'); p.dataset.orig = p.innerHTML;
-    const lang = p.lang;
-    p.innerHTML = tts.sents.map((s, j) => `<span class="${j === tts.sent ? 'hl' : ''}">${esc(displayText(s, lang))}</span>`).join('');
+    p.innerHTML = tts.sents.map((s, j) => `<span class="${j === tts.sent ? 'hl' : ''}">${esc(displayText(s, p.lang))}</span>`).join('');
     p.querySelector('.hl')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }
-  function load(i) { tts.para = i; tts.sents = splitSentences(paraText(i)); tts.sent = 0; }
+  function load(i) { tts.para = i; tts.sents = splitSentences(paraText(i), readLang()); tts.sent = 0; }
   function sayCurrent() { highlight(); speaker.speak(tts.sents[tts.sent] || ' '); }
   function step(d, auto = false) {
     tts.sent += d;
@@ -257,15 +328,16 @@ function setupTTS(b) {
   }
   function setPlayBtn(on) { $('#tPlay').textContent = on ? '⏸ ' + t('pause') : '▶ ' + t('play'); }
   function stop() { speaker.stop(); clearHi(); setPlayBtn(false); tts.started = false; }
+  reader.ttsStop = stop;
   $('#tPlay').onclick = () => {
-    if (speaker.playing) { speaker.pause(); setPlayBtn(false); return; }
-    if (tts.started && speechSynthesis.paused) { speaker.resume(); setPlayBtn(true); return; }
+    if (speaker.playing) { speaker.pause(); setPlayBtn(false); return; } // pause = on mémorise la phrase en cours
     fillVoices(); if (!tts.started) { load(currentPara()); tts.started = true; }
-    speaker.playing = true; setPlayBtn(true); sayCurrent();
+    speaker.playing = true; setPlayBtn(true); sayCurrent(); // reprise à la phrase en cours (fiable sur tous les navigateurs)
   };
   $('#tStop').onclick = stop;
   $('#tPrev').onclick = () => { if (!tts.started) { load(currentPara()); tts.started = true; } step(-1); };
   $('#tNext').onclick = () => { if (!tts.started) { load(currentPara()); tts.started = true; } step(1); };
+  reader.ttsDebug = () => ({ sents: tts.sents, para: tts.para, sent: tts.sent, lang: readLang(), voice: speaker.opts.voice?.name || null });
 }
 
 // ---------- Traduction ----------
@@ -278,7 +350,25 @@ function getWorker() {
   return worker;
 }
 const call = (msg, onProgress) => new Promise((res, rej) => { const id = ++reqId; pending.set(id, { res, rej, onProgress }); getWorker().postMessage({ ...msg, id }); });
+// Paragraphes à ne pas traduire : en-tête et licence Project Gutenberg, en-têtes « Source : … » (Wikisource / Internet Archive).
+function boilerplate(paras) {
+  const skip = new Set();
+  const start = paras.findIndex((p) => /\*\*\* ?START OF (THE|THIS) PROJECT GUTENBERG/i.test(p));
+  const end = paras.findIndex((p) => /\*\*\* ?END OF (THE|THIS) PROJECT GUTENBERG/i.test(p));
+  if (start >= 0) for (let i = 0; i <= start; i++) skip.add(i);
+  if (end >= 0) for (let i = end; i < paras.length; i++) skip.add(i);
+  if (/^Source : /.test(paras[0] || '')) skip.add(0);
+  paras.forEach((p, i) => { if (!/\p{L}/u.test(p)) skip.add(i); }); // lignes sans lettres (séparateurs, numéros)
+  return skip;
+}
+// Nettoyage des répétitions résiduelles du modèle : suites de ponctuation, mots répétés, sortie anormalement longue.
+function tidy(out, src) {
+  let s = out.replace(/([.,;:!?؟،…_\-–—])(\s*[.,;:!?؟،…_\-–—]){2,}/g, '$1').replace(/\b(\p{L}+)(\s+\1\b){2,}/giu, '$1');
+  if (s.length > src.length * 3 + 40) s = s.slice(0, src.length * 2 + 20).replace(/\s+\S*$/, '') + '…';
+  return s.trim();
+}
 function chunkPara(p, max = 450) {
+  p = p.replace(/\s*\n\s*/g, ' '); // fusionne les lignes courtes d'un même paragraphe (vers, OCR) en une seule entrée
   if (p.length <= max) return [p];
   const out = []; let cur = '';
   for (const s of splitSentences(p)) { if ((cur + s).length > max && cur) { out.push(cur); cur = ''; } cur += s; }
@@ -329,14 +419,15 @@ function setupTranslate(b, trKey) {
       $('#viewSel').hidden = false; if (reader.view === 'orig') reader.view = 'bi'; reader.segOn(); reader.drawText();
       const start = $('#trFrom').checked ? currentPara() : 0;
       const order = [...Array(reader.paras.length).keys()].slice(start).concat([...Array(start).keys()]);
-      const todo = order.filter((i) => out[i] == null); let done = reader.paras.length - todo.length;
+      const skip = boilerplate(reader.paras);
+      const todo = order.filter((i) => out[i] == null && !skip.has(i)); let done = reader.paras.length - todo.length;
       const BATCH = 4;
       for (let k = 0; k < todo.length && running; k += BATCH) {
         const idx = todo.slice(k, k + BATCH);
         const chunks = idx.map((i) => chunkPara(reader.paras[i]));
         const flat = chunks.flat();
-        const res = await call({ type: 'translate', texts: flat, src: m.src, tgt: m.tgt });
-        let p = 0; idx.forEach((i, j) => { const n = chunks[j].length; out[i] = res.texts.slice(p, p + n).join(' '); p += n; });
+        const res = await call({ type: 'translate', texts: flat, src: m.src, tgt: m.tgt, maxLen: Math.max(...flat.map((x) => x.length)) });
+        let p = 0; idx.forEach((i, j) => { const n = chunks[j].length; out[i] = res.texts.slice(p, p + n).map((x, k) => tidy(x, chunks[j][k])).join(' '); p += n; });
         await idbSet(key, { paras: out, model: m.id, updated: Date.now() });
         done += idx.length; prog.value = (100 * done) / reader.paras.length;
         status.textContent = `${t('translating')} : ${done}/${reader.paras.length} ${t('paragraphs')}`;
@@ -357,8 +448,8 @@ function updatePara(i, txt, tl) {
 // ---------- Routeur ----------
 function route() {
   window.onscroll = null;
-  const m = location.hash.match(/^#\/book\/(.+)$/);
-  if (m) renderReader(decodeURIComponent(m[1])); else { speaker?.stop(); document.body.dataset.theme = prefs.theme; renderLibrary(); }
+  const m = location.hash.match(/^#\/book\/(?:(fr|en|ar|kab)\/)?(.+)$/);
+  if (m) renderReader(m[1], decodeURIComponent(m[2])); else { speaker?.stop(); document.body.dataset.theme = prefs.theme; renderLibrary(); }
 }
 window.addEventListener('hashchange', route);
 loadCatalogue().then(route).catch((e) => { app.innerHTML = `<p class="loading">⚠ ${esc(e.message)}</p>`; });

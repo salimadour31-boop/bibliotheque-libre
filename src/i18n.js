@@ -21,7 +21,7 @@ const S = {
     loadingModel: 'Chargement du modèle…', translating: 'Traduction', done: 'Terminé', trFrom: 'À partir du paragraphe actuel',
     trError: 'Erreur de traduction', clearTr: 'Effacer cette traduction', install: 'Installer l’application', about: 'À propos',
     aboutText: 'Application libre (MIT), sans publicité ni pistage. Les textes proviennent de sources légales : Project Gutenberg, Wikisource, Internet Archive. Chaque livre indique sa source et sa licence.',
-    uiLang: 'Langue', loading: 'Chargement…', ocr: 'OCR brut', paragraphs: 'paragraphes', themes: { roman: 'Roman', 'poésie': 'Poésie', contes: 'Contes', philosophie: 'Philosophie', histoire: 'Histoire', religion: 'Religion', sciences: 'Sciences', 'théâtre': 'Théâtre', jeunesse: 'Jeunesse' },
+    uiLang: 'Langue', more: 'Voir plus', readWhat: 'Lire', testVoice: 'Tester la voix', noVoiceLang: 'aucune voix pour cette langue', otherVoices: 'Autres voix (prononciation approximative)', noVoiceFor: 'Aucune voix installée pour la langue', fallbackHint: 'Vous pouvez choisir une autre voix ci-dessous (prononciation approximative) ou installer une voix :', loading: 'Chargement…', ocr: 'OCR brut', paragraphs: 'paragraphes', themes: { roman: 'Roman', 'poésie': 'Poésie', contes: 'Contes', philosophie: 'Philosophie', histoire: 'Histoire', religion: 'Religion', sciences: 'Sciences', 'théâtre': 'Théâtre', jeunesse: 'Jeunesse', 'langue et littérature': 'Langue et littérature' },
   },
   en: {
     app: 'Free Library', tagline: 'Public-domain books in French, Arabic, Kabyle and English',
@@ -43,7 +43,7 @@ const S = {
     loadingModel: 'Loading model…', translating: 'Translating', done: 'Done', trFrom: 'From the current paragraph',
     trError: 'Translation error', clearTr: 'Delete this translation', install: 'Install app', about: 'About',
     aboutText: 'Free software (MIT), no ads, no tracking. Texts come from legal sources: Project Gutenberg, Wikisource, Internet Archive. Each book shows its source and license.',
-    uiLang: 'Language', loading: 'Loading…', ocr: 'raw OCR', paragraphs: 'paragraphs', themes: { roman: 'Novel', 'poésie': 'Poetry', contes: 'Tales', philosophie: 'Philosophy', histoire: 'History', religion: 'Religion', sciences: 'Science', 'théâtre': 'Drama', jeunesse: 'Children' },
+    uiLang: 'Language', more: 'Show more', readWhat: 'Read', testVoice: 'Test voice', noVoiceLang: 'no voice for this language', otherVoices: 'Other voices (approximate pronunciation)', noVoiceFor: 'No voice installed for', fallbackHint: 'Pick another voice below (approximate pronunciation) or install one:', loading: 'Loading…', ocr: 'raw OCR', paragraphs: 'paragraphs', themes: { roman: 'Novel', 'poésie': 'Poetry', contes: 'Tales', philosophie: 'Philosophy', histoire: 'History', religion: 'Religion', sciences: 'Science', 'théâtre': 'Drama', jeunesse: 'Children', 'langue et littérature': 'Language & literature' },
   },
   ar: {
     app: 'المكتبة الحرة', tagline: 'كتب في الملك العام بالفرنسية والعربية والقبائلية والإنجليزية',
@@ -65,7 +65,7 @@ const S = {
     loadingModel: 'جارٍ تحميل النموذج…', translating: 'جارٍ الترجمة', done: 'تم', trFrom: 'من الفقرة الحالية',
     trError: 'خطأ في الترجمة', clearTr: 'حذف هذه الترجمة', install: 'تثبيت التطبيق', about: 'حول',
     aboutText: 'برنامج حر (MIT) بلا إعلانات ولا تتبع. النصوص من مصادر قانونية: مشروع غوتنبرغ، ويكي مصدر، أرشيف الإنترنت. لكل كتاب مصدره وترخيصه.',
-    uiLang: 'اللغة', loading: 'جارٍ التحميل…', ocr: 'نص ممسوح خام', paragraphs: 'فقرة', themes: { roman: 'رواية', 'poésie': 'شعر', contes: 'حكايات', philosophie: 'فلسفة', histoire: 'تاريخ', religion: 'دين', sciences: 'علوم', 'théâtre': 'مسرح', jeunesse: 'أطفال' },
+    uiLang: 'اللغة', more: 'عرض المزيد', readWhat: 'اقرأ', testVoice: 'تجربة الصوت', noVoiceLang: 'لا يوجد صوت لهذه اللغة', otherVoices: 'أصوات أخرى (نطق تقريبي)', noVoiceFor: 'لا يوجد صوت مثبت للغة', fallbackHint: 'اختر صوتًا آخر أدناه (نطق تقريبي) أو ثبّت صوتًا:', loading: 'جارٍ التحميل…', ocr: 'نص ممسوح خام', paragraphs: 'فقرة', themes: { roman: 'رواية', 'poésie': 'شعر', contes: 'حكايات', philosophie: 'فلسفة', histoire: 'تاريخ', religion: 'دين', sciences: 'علوم', 'théâtre': 'مسرح', jeunesse: 'أطفال', 'langue et littérature': 'لغة وأدب' },
   },
   kab: {
     app: 'Tamkarḍit tilellit', tagline: 'Idlisen ilelliyen s tefransist, taɛrabt, taqbaylit d teglizit',
@@ -87,7 +87,7 @@ const S = {
     loadingModel: 'Asali n tmudemt…', translating: 'Tasuqilt', done: 'Yemmed', trFrom: 'Seg tseddart tamirant',
     trError: 'Tuccḍa deg tsuqilt', clearTr: 'Kkes tasuqilt-a', install: 'Sbedd asnas', about: 'Ɣef',
     aboutText: 'Aseɣzan ilelli (MIT), war adellel, war aḍfar. Iḍrisen d-kkan seg iɣbula usḍifen: Project Gutenberg, Wikisource, Internet Archive.',
-    uiLang: 'Tutlayt', loading: 'Asali…', ocr: 'OCR', paragraphs: 'tiseddarin', themes: { roman: 'Ungal', 'poésie': 'Tamedyazt', contes: 'Timucuha', philosophie: 'Tafelsaft', histoire: 'Amezruy', religion: 'Asgamar', sciences: 'Tussniwin', 'théâtre': 'Amezgun', jeunesse: 'Igerdan' },
+    uiLang: 'Tutlayt', more: 'Wali ugar', readWhat: 'Ɣeṛ', testVoice: 'Sekyed taɣect', noVoiceLang: 'ulac taɣect i tutlayt-a', otherVoices: 'Tuɣac nniḍen (asuɣel amaḍal)', noVoiceFor: 'Ulac taɣect yettwasbedden i tutlayt', fallbackHint: 'Fren taɣect nniḍen neɣ sbedd yiwet:', loading: 'Asali…', ocr: 'OCR', paragraphs: 'tiseddarin', themes: { roman: 'Ungal', 'poésie': 'Tamedyazt', contes: 'Timucuha', philosophie: 'Tafelsaft', histoire: 'Amezruy', religion: 'Asgamar', sciences: 'Tussniwin', 'théâtre': 'Amezgun', jeunesse: 'Igerdan', 'langue et littérature': 'Tutlayt d tsekla' },
   },
 };
 let cur = localStorage.getItem('uiLang') || (navigator.language || 'fr').slice(0, 2);

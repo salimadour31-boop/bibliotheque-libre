@@ -9,43 +9,65 @@ Bibliothèque numérique **gratuite et open source** (PWA) : livres du domaine p
 - **Catalogue** (`public/catalogue.json`) : titre, auteur, langue, écriture, année, couverture, résumé, thème, source, licence, lien d’origine. Recherche, filtres FR / AR / KAB / EN, filtre par thème, tri (titre, auteur, année, langue), vue par auteur.
 - **Liseuse sans redirection** : taille et police (Noto Serif, Noto Sans, Noto Naskh Arabic, Noto Sans Tifinagh), thèmes clair / sépia / sombre, interligne, signets, reprise automatique de la lecture (localStorage). RTL complet pour l’arabe (direction détectée par paragraphe). Kabyle : latin par défaut, affichage en **tifinagh** ou **graphie arabe** par translittération automatique (approximative). Caractères ɛ ɣ ḥ ṭ ẓ č ǧ pris en charge par les polices.
 - **Polices auto-hébergées** (paquets @fontsource intégrés au build) : aucune requête vers Google Fonts.
-- **Lecture à voix haute** (Web Speech API) : phrase courante surlignée, lecture/pause/arrêt, phrase précédente/suivante, choix de voix, vitesse, hauteur, volume, minuterie de sommeil. Pour le kabyle : voix française ou arabe de repli, avec avertissement « prononciation approximative ».
+- **Lecture à voix haute** (Web Speech API) : phrase courante surlignée, lecture/pause/arrêt, phrase précédente/suivante, vitesse, hauteur, volume, minuterie de sommeil, bouton « Tester la voix ».
+  - Découpage en phrases avec `Intl.Segmenter` (gère l'arabe ؟ ، ؛), morceaux ≤ 200 caractères (Chrome coupe les énoncés longs), suppression du tatweel, des signes coraniques et des caractères invisibles avant lecture.
+  - Choix automatique de la meilleure voix de la langue (`ar`, `ar-SA`, `ar-EG`… ; priorité aux voix « Natural / Neural / Online / Google / Premium »), choix mémorisé par langue, autres voix proposées en repli.
+  - Pause/reprise fiable sur tous les navigateurs (arrêt + reprise à la phrase en cours, au lieu de `speechSynthesis.pause()` peu fiable sur Android/iOS) ; minuteur de secours si l'événement de fin n'arrive pas.
+  - Sans voix arabe sur l'appareil : message expliquant comment en installer une (Android, iPhone/iPad, Windows, macOS, Linux).
+  - En vue bilingue, choix « lire l'original / la traduction ». Kabyle : voix française ou arabe de repli avec avertissement.
 - **Traduction « Traduire ce livre »** avec Transformers.js, dans un Web Worker :
   - NLLB-200 distillé 600M (`Xenova/nllb-200-distilled-600M`, quantifié q8, **~900 Mo**) pour toutes les paires FR/AR/KAB/EN (`fra_Latn`, `arb_Arab`, `kab_Latn`, `eng_Latn`) ;
   - option légère Marian (`Xenova/opus-mt-fr-en` / `opus-mt-en-fr`, **~110 Mo**) pour FR↔EN.
+  - En-têtes et licences (Project Gutenberg, « Source : … ») et lignes sans lettres ne sont pas traduits ; anti-répétitions (`repetition_penalty` 1,25, `no_repeat_ngram_size` 3, longueur de sortie limitée selon l'entrée, nettoyage des suites de ponctuation) ; lignes courtes d'un même paragraphe fusionnées.
   - Taille affichée avant téléchargement, progression, traitement par lots de paragraphes, sauvegarde de chaque lot dans IndexedDB (reprise après interruption), vue traduction seule / bilingue côte à côte, la synthèse vocale peut lire la traduction. Mention permanente : « Traduction automatique, qualité variable, surtout pour le kabyle ».
-  - Les fichiers WebAssembly d’onnxruntime sont auto-hébergés (`/ort`), les modèles sont téléchargés depuis Hugging Face puis gardés en cache par le navigateur. Le texte ne quitte jamais l’appareil.
+  - Le fichier WebAssembly d’onnxruntime est auto-hébergé (une seule copie dans `assets/`), les modèles sont téléchargés depuis Hugging Face puis gardés en cache par le navigateur. Le texte ne quitte jamais l’appareil.
 - **PWA hors ligne** : manifeste, service worker, installable ; bouton « Télécharger pour lecture hors ligne » par livre.
 - **Interface** en français, anglais, arabe (RTL) et kabyle.
 
-## Livres (lot 1 : 22 livres)
+## Livres (5 964 au 16/10/2026)
 
-| Langue | Nombre | Sources |
-|---|---|---|
-| Kabyle | 2 | Internet Archive (A. Hanoteau, 1867 et 1906 — ouvrages bilingues kabyle/français, **OCR brut non corrigé**) |
-| Arabe | 7 | Wikisource arabe (Ibn al-Muqaffa’, Ibn Tufayl, Imru’ al-Qays, Ibn Shuhayd, Ibn Hazm, al-Ma’arri) |
-| Français | 7 | Project Gutenberg (6), Wikisource fr (1) |
-| Anglais | 6 | Project Gutenberg |
+| Langue | Livres | Sources | Dépôt de données |
+|---|---|---|---|
+| Kabyle | 7 | Internet Archive (Hanoteau, Boulifa, Basset, Mouliéras, Luciani — ouvrages du XIXe s. bilingues kabyle/français, **OCR brut non corrigé**) | [bibliotheque-libre-data-kab](https://github.com/salimadour31-boop/bibliotheque-libre-data-kab) |
+| Arabe | 1 023 | Wikisource arabe (auteurs morts ≤ 1955, vérifié sur Wikidata) | [bibliotheque-libre-data-ar](https://github.com/salimadour31-boop/bibliotheque-libre-data-ar) |
+| Français | 2 489 | Project Gutenberg 2 488, Wikisource 1 | [bibliotheque-libre-data-fr](https://github.com/salimadour31-boop/bibliotheque-libre-data-fr) |
+| Anglais | 2 445 | Project Gutenberg | [bibliotheque-libre-data-en](https://github.com/salimadour31-boop/bibliotheque-libre-data-en) |
 
-Détail, licences et liens : [SOURCES.md](SOURCES.md). Historique : [journal.md](journal.md).
+Détail et licences : [SOURCES.md](SOURCES.md) et `SOURCES-<langue>.csv`. Historique : [journal.md](journal.md).
 
-Le kabyle reste la langue la moins couverte : aucun texte kabyle moderne au statut juridique clair n’a été trouvé pour l’instant ; les deux ouvrages retenus sont des recueils du XIXe siècle dont l’OCR est de mauvaise qualité (orthographe ancienne, passages en graphie arabe illisibles).
+Le kabyle reste très peu couvert : seuls 7 ouvrages anciens au statut explicitement libre ont été trouvés, et ce sont surtout des grammaires/recueils bilingues dont l'OCR est médiocre.
+
+## Architecture
+
+- **Application** (ce dépôt, ~30 Mo publiés dont 27 Mo pour le moteur WebAssembly de traduction) : catalogue découpé en `public/catalogue/index.json` + `<langue>-<page>.json` (1 000 livres par page), chargé à la demande quand on choisit une langue ; affichage par pages de 48.
+- **Textes** : 4 dépôts de données publiés sur GitHub Pages (`https://salimadour31-boop.github.io/bibliotheque-libre-data-<langue>/books/<id>.txt.gz`), compressés en gzip (≈ 3× plus petits) et décompressés dans le navigateur (`DecompressionStream`). Couvertures Gutenberg copiées localement dans les dépôts de données (aucune requête vers des tiers en dehors de GitHub Pages). Tailles : fr ≈ 460 Mo, en ≈ 700 Mo, ar ≈ 140 Mo, kab ≈ 1 Mo.
+- **Hors ligne** : le bouton « Télécharger » met le fichier dans le cache du navigateur ; le lecteur lit d'abord ce cache.
 
 ## Ajouter des livres
 
 ```bash
-npm install
-node scripts/fetch-books.mjs scripts/batch-2.json    # lot JSON : gutenberg (id), wikisource (lang + title), ia (identifiant)
+# Project Gutenberg en masse (catalogue RDF officiel, filtré domaine public + auteurs morts ≤ 1955)
+curl -LO https://www.gutenberg.org/cache/epub/feeds/rdf-files.tar.bz2
+python3 scripts/gutenberg-parse-rdf.py && python3 scripts/gutenberg-select.py   # → selection.json
+node scripts/bulk-gutenberg.mjs selection.json ../bibdata && node scripts/bulk-covers.mjs selection.json ../bibdata
+# Wikisource (auteurs morts ≤ 1955 via Wikidata, traductions écartées)
+node scripts/wikisource-authors.mjs ar 102 > ../bibdata/works-ar.json
+node scripts/bulk-wikisource.mjs ar ../bibdata/works-ar.json ../bibdata 2000
+# Ajouts manuels détaillés (Internet Archive, etc.)
+node scripts/fetch-books.mjs scripts/batch-3-kab.json
+# Compression, catalogue, puis commit/push des dépôts de données
+node scripts/compress-data.mjs ../bibdata/data-fr ../bibdata/data-en ../bibdata/data-ar ../bibdata/data-kab
+node scripts/build-catalogue.mjs ../bibdata
 ```
 
-Le script télécharge les textes, les nettoie (UTF-8, normalisation NFC), conserve l’en-tête de licence, refuse les livres Gutenberg non marqués domaine public et met à jour `public/catalogue.json`. Ajoutez ensuite les entrées correspondantes dans `SOURCES.md`.
+Les scripts limitent la cadence (3 à 4 requêtes simultanées, pauses), utilisent le cache CDN de gutenberg.org avec repli sur le miroir pglaf, et s'identifient par un User-Agent.
 
 ## Développement
 
 ```bash
 npm install
 npm run dev      # serveur de développement
-npm run build    # build dans dist/ (copie aussi les fichiers WASM d’onnxruntime dans public/ort)
+npm run build    # build dans dist/
 node scripts/test-translation.mjs   # test de traduction NLLB/Marian dans Node (télécharge ~1 Go)
 ```
 
@@ -53,25 +75,23 @@ Déploiement : GitHub Actions (`.github/workflows/pages.yml`) construit le site 
 
 ## État des tests (honnête)
 
-Testé sur la machine de build le 16/10/2026 (Chrome headless + Puppeteer, build de production servi par `vite preview`) :
+Tests du 16/10/2026, Chrome headless + Puppeteer, build de production (local puis site en ligne), textes servis par les dépôts de données GitHub Pages :
 
 | Élément | État |
 |---|---|
-| `npm run build` | ✅ OK |
-| Chargement du catalogue, 22 cartes, filtres langue, recherche, tri, vue par auteur | ✅ testé (headless) |
-| Interface en arabe (`dir="rtl"`) et en kabyle | ✅ testé, capture d’écran vérifiée |
-| Liseuse : paragraphes arabes en RTL avec Noto Naskh Arabic | ✅ testé (direction calculée = rtl), capture vérifiée |
-| Thème sombre/sépia, taille de police, signet, sauvegarde de position | ✅ testé (headless) |
-| Translittération tifinagh affichée avec Noto Sans Tifinagh | ✅ testé (capture) ; exactitude de la translittération **non vérifiée par un locuteur** |
-| Service worker actif, livre téléchargé puis relu **hors ligne** | ✅ testé (mode hors ligne de Chrome) |
-| Installation PWA sur téléphone | ❌ **non testé** (l’événement d’installation se déclenche dans Chrome headless) |
-| Lecture à voix haute | ⚠️ **non testé avec du son** : Chrome headless n’a aucune voix ; seuls l’interface, le message « aucune voix » et le surlignage de phrase (bouton suivant) ont été vérifiés |
-| Voix kabyle de repli + avertissement | ❌ non testé (pas de voix disponible) |
-| Traduction Marian FR→EN **dans le navigateur** | ✅ testé : modèle téléchargé, 36 paragraphes traduits, reprise après rechargement depuis IndexedDB |
-| Traduction NLLB FR→KAB **dans le navigateur** (WASM) | ✅ testé sur 4 paragraphes (modèle ~900 Mo téléchargé dans Chrome headless) ; qualité médiocre sur les lignes courtes (répétitions) |
-| NLLB, 12 paires FR/AR/KAB/EN, une phrase chacune, dans Node | ✅ testé — résultats dans `scripts/test-translation-result.txt` ; AR→EN a produit du charabia, AR→KAB et FR→KAB approximatifs |
-| WebGPU | ❌ non utilisé/non testé (WASM uniquement en v1) |
-| Navigateurs mobiles réels (Android/iOS), Safari, Firefox | ❌ **non testé** |
+| `npm run build` | ✅ |
+| Catalogue de 5 964 livres : chargement paginé par langue, filtres, recherche (titre/auteur prioritaires), tri, vue par auteur, bouton « Voir plus » | ✅ testé |
+| Ouverture de livres depuis les dépôts de données (gzip décompressé dans le navigateur) : arabe, kabyle, français | ✅ testé |
+| Livre arabe : 296 paragraphes affichés en RTL, police Noto Naskh Arabic | ✅ testé |
+| Interface ar (RTL) / kab, thèmes, taille, signets, reprise de lecture | ✅ testé |
+| Livre téléchargé puis relu hors ligne (Candide, 445 paragraphes, depuis le dépôt de données) | ✅ testé |
+| Lecture à voix haute **arabe** — logique (voix simulées) : choix de la voix « Natural » ar-SA, énoncés en `ar-SA`, morceaux ≤ 200 caractères, sans tatweel, surlignage, pause puis reprise à la bonne phrase, message d'aide sans voix | ✅ testé avec un `speechSynthesis` **simulé** |
+| Lecture à voix haute avec **son réel** (toutes langues) | ❌ **non testé** : aucune voix disponible dans Chrome sur la machine de test, même après installation de speech-dispatcher/espeak-ng |
+| Traduction Marian FR→EN (Candide) | ✅ ~80 paragraphes, qualité correcte, plus de suites de points |
+| Traduction NLLB FR→KAB (Candide) dans le navigateur | ✅ ~95 paragraphes, kabyle lisible mais approximatif |
+| Traduction NLLB AR→FR (*al-Adab al-saghir*) dans le navigateur | ✅ ~60 paragraphes, sens général souvent rendu, contresens fréquents |
+| Requêtes vers des CDN tiers depuis la page | ✅ aucune (seulement le site et GitHub Pages) ; requêtes du Web Worker vers Hugging Face pour les modèles (attendu) — l'absence de jsDelivr dans le worker n'a pas été vérifiée au niveau réseau |
+| Installation PWA, navigateurs mobiles réels, Safari, Firefox, WebGPU | ❌ **non testé** |
 
 ## Synthèse vocale kabyle (MMS-TTS)
 

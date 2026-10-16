@@ -1,0 +1,37 @@
+{
+ "generated": "2026-10-16",
+ "langs": {
+  "kab": {
+   "count": 7,
+   "pages": 1,
+   "base": "https://salimadour31-boop.github.io/bibliotheque-libre-data-kab/"
+  },
+  "ar": {
+   "count": 1023,
+   "pages": 2,
+   "base": "https://salimadour31-boop.github.io/bibliotheque-libre-data-ar/"
+  },
+  "fr": {
+   "count": 2489,
+   "pages": 3,
+   "base": "https://salimadour31-boop.github.io/bibliotheque-libre-data-fr/"
+  },
+  "en": {
+   "count": 2445,
+   "pages": 3,
+   "base": "https://salimadour31-boop.github.io/bibliotheque-libre-data-en/"
+  }
+ },
+ "themes": [
+  "histoire",
+  "poésie",
+  "contes",
+  "philosophie",
+  "roman",
+  "langue et littérature",
+  "religion",
+  "sciences",
+  "théâtre",
+  "jeunesse"
+ ]
+}

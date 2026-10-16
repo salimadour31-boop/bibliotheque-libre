@@ -1,14 +1,17 @@
 #!/usr/bin/env node
 // Récupère des livres libres de droits depuis des API ouvertes et met à jour public/catalogue.json.
-// Usage : node scripts/fetch-books.mjs scripts/batch-1.json [--force]
+// Usage : node scripts/fetch-books.mjs scripts/batch-1.json [--force]  puis  node scripts/compress-data.mjs ../bibdata/data-<langue>
 // Sources gérées : gutenberg (via Gutendex), wikisource (API MediaWiki), ia (Internet Archive, texte OCR).
 // Gutenberg : seuls les livres marqués copyright:false sont acceptés.
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { clean, htmlToText } from './lib-text.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
-const BOOKS = path.join(ROOT, 'public/books');
-const CAT = path.join(ROOT, 'public/catalogue.json');
+// Sortie : dossiers des dépôts de données (DATA_ROOT, par défaut ../bibdata) ; les métadonnées détaillées vont dans manual.json,
+// puis `node scripts/build-catalogue.mjs ../bibdata` régénère le catalogue découpé.
+const DATA = process.env.DATA_ROOT || path.join(ROOT, '..', 'bibdata');
+const CAT = path.join(DATA, 'manual.json');
 const UA = 'bibliotheque-libre/1.0 (open-source PWA; https://github.com/salimadour31-boop/bibliotheque-libre)';
 const MAX_BYTES = 8 * 1024 * 1024;
 const LANGS = { fr: ['fr', 'Latn'], en: ['en', 'Latn'], ar: ['ar', 'Arab'], kab: ['kab', 'Latn'] };
@@ -22,18 +25,6 @@ async function get(url, json = false, tries = 3) {
       return json ? r.json() : r.text();
     } catch (e) { if (i === tries - 1) throw e; await sleep(1500 * (i + 1)); }
   }
-}
-const clean = (t) => t.replace(/\r\n?/g, '\n').replace(/\u00ad/g, '').replace(/[ \t]+\n/g, '\n').replace(/\n{4,}/g, '\n\n\n').normalize('NFC').trim() + '\n';
-function htmlToText(html) {
-  return html
-    .replace(/<(style|script|sup)[^>]*>[\s\S]*?<\/\1>/gi, '')
-    .replace(/<span class="mw-editsection[\s\S]*?<\/span>\s*<\/span>/gi, '')
-    .replace(/<div[^>]*class="[^"]*(noprint|ws-noexport|navbox|licenseContainer|reference)[^"]*"[\s\S]*?<\/div>/gi, '')
-    .replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|h\d|li|tr|dd|dt|blockquote|poem)>/gi, '\n\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;|&#160;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#0?39;/g, "'")
-    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n))
-    .replace(/\[\d+\]/g, '').replace(/^.*\[\[.*\]\].*$/gm, '').replace(/^نزل نسخة مطبوعة$/gm, '').replace(/[\u200b\u200e\u200f]/g, '').replace(/\n[ \t]+/g, '\n').replace(/\n{3,}/g, '\n\n');
 }
 const slug = (s) => s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9\u0600-\u06ff]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
 
@@ -83,7 +74,7 @@ async function ia(it) {
   const f = md.files.find((x) => x.name.endsWith('_djvu.txt')); if (!f) throw new Error('pas de texte OCR');
   const text = await get(`https://archive.org/download/${it.id}/${encodeURIComponent(f.name)}`);
   const url = `https://archive.org/details/${it.id}`;
-  const lic = md.metadata.licenseurl ? `Licence indiquée : ${md.metadata.licenseurl}` : `Domaine public (auteur mort il y a plus de 100 ans, publication ${it.year})`;
+  const lic = md.metadata.licenseurl ? `Domaine public — marque indiquée par Internet Archive : ${md.metadata.licenseurl} (publication ${it.year})` : md.metadata['possible-copyright-status'] === 'NOT_IN_COPYRIGHT' ? `Domaine public — statut Internet Archive : NOT_IN_COPYRIGHT (publication ${it.year}, auteur mort avant 1956)` : `Domaine public (auteur mort il y a plus de 100 ans, publication ${it.year})`;
   const header = `Source : Internet Archive — ${url}\n${lic}\nTexte issu de la reconnaissance optique (OCR) d'Internet Archive, non corrigé.\n\n`;
   return { id: `ia-${it.id}`, ...meta(it), source: 'Internet Archive', license: lic, url, text: header + text };
 }
@@ -93,7 +84,6 @@ const file = process.argv[2]; if (!file) { console.error('Usage: node scripts/fe
 const force = process.argv.includes('--force');
 const items = JSON.parse(await fs.readFile(file, 'utf8'));
 let cat = []; try { cat = JSON.parse(await fs.readFile(CAT, 'utf8')); } catch {}
-await fs.mkdir(BOOKS, { recursive: true });
 for (const it of items) {
   const key = it.type + ':' + (it.id ?? it.title);
   try {
@@ -102,7 +92,7 @@ for (const it of items) {
     let text = clean(b.text); delete b.text;
     if (Buffer.byteLength(text) > MAX_BYTES) throw new Error('trop volumineux');
     if (text.length < 500) throw new Error('texte trop court');
-    const fname = `${b.id}.txt`; await fs.writeFile(path.join(BOOKS, fname), text);
+    const fname = `${b.id}.txt`; const BOOKS = path.join(DATA, `data-${b.language}`, 'books'); await fs.mkdir(BOOKS, { recursive: true }); await fs.writeFile(path.join(BOOKS, fname), text);
     const entry = { key, ...b, file: `books/${fname}`, size: Buffer.byteLength(text), added: new Date().toISOString().slice(0, 10) };
     Object.keys(entry).forEach((k) => entry[k] === undefined && delete entry[k]);
     cat = cat.filter((c) => c.key !== key); cat.push(entry);
