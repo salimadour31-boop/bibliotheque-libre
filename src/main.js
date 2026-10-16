@@ -121,11 +121,11 @@ function renderLibrary() {
   bindHeader();
   const PAGE = 48; let shown = PAGE; let timer;
   const draw = async (more = false) => {
-    const el = $('#results');
+    const el = $('#results'); if (!el) return;
     if (!more) shown = PAGE;
     const need = state.lang === 'all' ? Object.keys(index.langs) : [state.lang];
     if (need.some((l) => !loaded[l])) { el.innerHTML = `<p class="loading">${t('loading')}</p>`; await Promise.all(need.map(ensureLang)); }
-    if (!el.isConnected) return; // l'utilisateur a quitté la page pendant le chargement
+    if (!el.isConnected || !$('#results')) return; // l'utilisateur a quitté la page pendant le chargement
     const list = filtered();
     if (!list.length) { el.innerHTML = `<p class="empty">${t('none')}</p>`; return; }
     let html;
