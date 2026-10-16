@@ -1,0 +1,17 @@
+NLLB chargé en 12 s
+fra_Latn -> arb_Arab (4172 ms): قال الثعلب للقربة: "يا سيدي ، كم أنت جميل!
+fra_Latn -> kab_Latn (4240 ms): Yenna-yas useggem:  A Sidi, d awezɣi i telliḍ. 
+fra_Latn -> eng_Latn (3258 ms): The fox said to the raven: "Sir, how pretty you are!"
+arb_Arab -> fra_Latn (4054 ms): Le roi dit au philosophe: "Donnez-moi un exemple de deux hommes amoureux.
+arb_Arab -> kab_Latn (4603 ms): Yenna-yas ugellid i umeslay: Sseqṛeɣ-d amedya n sinheṛ.
+arb_Arab -> eng_Latn (3994 ms): " l mae the "gr th- " "I-ed the the two men in the love.
+kab_Latn -> fra_Latn (2836 ms): Un jour, un homme et sa sa femme vivaient dans un village.
+kab_Latn -> arb_Arab (2418 ms): كان هناك رجل وزوجته يعيشون في قرية.
+kab_Latn -> eng_Latn (2099 ms): One day a a couple lived in a village.
+eng_Latn -> fra_Latn (4587 ms): Alice commençait à se fatiguer de s'asseoir à côté de sa sœur sur la banque.
+eng_Latn -> arb_Arab (1924 ms): بدأت بدأت تعبث مع أختها.
+eng_Latn -> kab_Latn (4275 ms): Alice tebda tettwaḥyu mliḥ ad teqqim ɣer tama n weltma-s deg tewwurt.
+WARNING: `MarianTokenizer` is not yet supported by Hugging Face's "fast" tokenizers library. Therefore, you may experience slightly inaccurate results.
+Xenova/opus-mt-fr-en : The fox said to the horn, "Sir, how pretty you are!"
+WARNING: `MarianTokenizer` is not yet supported by Hugging Face's "fast" tokenizers library. Therefore, you may experience slightly inaccurate results.
+Xenova/opus-mt-en-fr : Alice commençait à se lasser de s'asseoir à la banque avec sa sœur.

@@ -1,0 +1,223 @@
+[
+ {
+  "type": "ia",
+  "id": "poesies-populaires-de-la",
+  "language": "kab",
+  "script": "Latn",
+  "title": "Poésies populaires de la Kabylie du Jurjura (texte kabyle et traduction)",
+  "author": "Adolphe Hanoteau",
+  "year": 1867,
+  "theme": "poésie",
+  "summary": "Recueil de poèmes kabyles transcrits en caractères latins (orthographe du XIXe s.) avec traduction française. Texte OCR brut d'Internet Archive : nombreuses erreurs de reconnaissance, et des passages en caractères arabes illisibles.",
+  "note": "OCR brut"
+ },
+ {
+  "type": "wikisource",
+  "lang": "fr",
+  "title": "Contes populaires d’Afrique (Basset)",
+  "language": "fr",
+  "script": "Latn",
+  "author": "René Basset",
+  "year": 1903,
+  "theme": "contes",
+  "summary": "Anthologie de contes populaires africains, dont des contes berbères et kabyles, réunis par René Basset.",
+  "maxParts": 40
+ },
+ {
+  "type": "wikisource",
+  "lang": "ar",
+  "title": "كليلة ودمنة",
+  "language": "ar",
+  "script": "Arab",
+  "author": "ابن المقفع",
+  "year": 750,
+  "theme": "contes",
+  "summary": "Fables animalières traduites et adaptées en arabe par Ibn al-Muqaffa' (VIIIe s.)."
+ },
+ {
+  "type": "wikisource",
+  "lang": "ar",
+  "title": "الأدب الصغير",
+  "language": "ar",
+  "script": "Arab",
+  "author": "ابن المقفع",
+  "year": 750,
+  "theme": "philosophie",
+  "summary": "Maximes morales et conseils de sagesse d'Ibn al-Muqaffa'."
+ },
+ {
+  "type": "wikisource",
+  "lang": "ar",
+  "title": "حي بن يقظان",
+  "language": "ar",
+  "script": "Arab",
+  "author": "ابن طفيل",
+  "year": 1170,
+  "theme": "philosophie",
+  "summary": "Roman philosophique d'Ibn Tufayl (XIIe s.) : un enfant grandit seul sur une île et découvre la vérité par la raison."
+ },
+ {
+  "type": "wikisource",
+  "lang": "ar",
+  "title": "معلقة امرئ القيس",
+  "language": "ar",
+  "script": "Arab",
+  "author": "امرؤ القيس",
+  "year": 540,
+  "theme": "poésie",
+  "summary": "La Mu'allaqa d'Imru' al-Qays, poème préislamique."
+ },
+ {
+  "type": "wikisource",
+  "lang": "ar",
+  "title": "رسالة التوابع والزوابع",
+  "language": "ar",
+  "script": "Arab",
+  "author": "ابن شهيد الأندلسي",
+  "year": 1030,
+  "theme": "roman",
+  "summary": "Épître des génies et des démons, voyage imaginaire d'Ibn Shuhayd d'al-Andalus."
+ },
+ {
+  "type": "wikisource",
+  "lang": "ar",
+  "title": "طوق الحمامة",
+  "language": "ar",
+  "script": "Arab",
+  "author": "ابن حزم الأندلسي",
+  "year": 1022,
+  "theme": "philosophie",
+  "summary": "Le Collier de la colombe, traité sur l'amour d'Ibn Hazm (XIe s.)."
+ },
+ {
+  "type": "wikisource",
+  "lang": "ar",
+  "title": "رسالة الغفران",
+  "language": "ar",
+  "script": "Arab",
+  "author": "أبو العلاء المعري",
+  "year": 1033,
+  "theme": "roman",
+  "summary": "L'Épître du pardon d'Abu al-'Ala' al-Ma'arri, voyage dans l'au-delà."
+ },
+ {
+  "type": "gutenberg",
+  "id": 4650,
+  "theme": "roman",
+  "title": "Candide, ou l'optimisme",
+  "author": "Voltaire",
+  "language": "fr",
+  "year": 1759,
+  "pdVerified": "Gutendex copyright:false, vérifié le 2026-10-16"
+ },
+ {
+  "type": "gutenberg",
+  "id": 6099,
+  "theme": "poésie",
+  "title": "Les Fleurs du mal",
+  "author": "Charles Baudelaire",
+  "language": "fr",
+  "year": 1857,
+  "pdVerified": "Gutendex copyright:false, vérifié le 2026-10-16"
+ },
+ {
+  "type": "gutenberg",
+  "id": 800,
+  "theme": "roman",
+  "title": "Le Tour du monde en quatre-vingts jours",
+  "author": "Jules Verne",
+  "language": "fr",
+  "year": 1873,
+  "pdVerified": "Gutendex copyright:false, vérifié le 2026-10-16"
+ },
+ {
+  "type": "gutenberg",
+  "id": 13846,
+  "theme": "philosophie",
+  "title": "Discours de la méthode",
+  "author": "René Descartes",
+  "language": "fr",
+  "year": 1637,
+  "pdVerified": "Gutendex copyright:false, vérifié le 2026-10-16"
+ },
+ {
+  "type": "gutenberg",
+  "id": 15434,
+  "theme": "histoire",
+  "title": "En Kabylie : Voyage d'une Parisienne au Djurjura",
+  "author": "Jeanne Lévy",
+  "language": "fr",
+  "year": 1895,
+  "pdVerified": "Gutendex copyright:false, vérifié le 2026-10-16"
+ },
+ {
+  "type": "gutenberg",
+  "id": 20972,
+  "theme": "contes",
+  "title": "Histoires ou Contes du temps passé, avec des moralités",
+  "author": "Charles Perrault",
+  "language": "fr",
+  "year": 1697,
+  "pdVerified": "Gutendex copyright:false, vérifié le 2026-10-16"
+ },
+ {
+  "type": "gutenberg",
+  "id": 11,
+  "theme": "jeunesse",
+  "title": "Alice's Adventures in Wonderland",
+  "author": "Lewis Carroll",
+  "language": "en",
+  "year": 1865,
+  "pdVerified": "Gutendex copyright:false, vérifié le 2026-10-16"
+ },
+ {
+  "type": "gutenberg",
+  "id": 84,
+  "theme": "roman",
+  "title": "Frankenstein; or, The Modern Prometheus",
+  "author": "Mary Wollstonecraft Shelley",
+  "language": "en",
+  "year": 1818,
+  "pdVerified": "Gutendex copyright:false, vérifié le 2026-10-16"
+ },
+ {
+  "type": "gutenberg",
+  "id": 1041,
+  "theme": "poésie",
+  "title": "Shakespeare's Sonnets",
+  "author": "William Shakespeare",
+  "language": "en",
+  "year": 1609,
+  "pdVerified": "Gutendex copyright:false, vérifié le 2026-10-16"
+ },
+ {
+  "type": "gutenberg",
+  "id": 10085,
+  "theme": "contes",
+  "title": "Moorish Literature: Romantic Ballads, Tales of the Berbers, Stories of the Kabyles…",
+  "author": "Divers (anthologie)",
+  "language": "en",
+  "year": 1901,
+  "pdVerified": "Gutendex copyright:false, vérifié le 2026-10-16"
+ },
+ {
+  "type": "gutenberg",
+  "id": 1342,
+  "theme": "roman",
+  "title": "Pride and Prejudice",
+  "author": "Jane Austen",
+  "language": "en",
+  "year": 1813,
+  "pdVerified": "Gutendex copyright:false, vérifié le 2026-10-16"
+ },
+ {
+  "type": "gutenberg",
+  "id": 1524,
+  "theme": "théâtre",
+  "title": "Hamlet, Prince of Denmark",
+  "author": "William Shakespeare",
+  "language": "en",
+  "year": 1603,
+  "pdVerified": "Gutendex copyright:false, vérifié le 2026-10-16"
+ }
+]

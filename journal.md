@@ -1,0 +1,36 @@
+# Journal
+
+## 2026-10-16 — v1
+
+### Livres ajoutés (22)
+- **Kabyle (2)** — Internet Archive : Hanoteau, *Poésies populaires de la Kabylie du Jurjura* (1867, numérisation Gallica/BnF) ; Hanoteau, *Essai de grammaire kabyle* (éd. 1906). OCR brut, bilingue kab/fr.
+- **Arabe (7)** — Wikisource ar : كليلة ودمنة، الأدب الصغير، حي بن يقظان، معلقة امرئ القيس، رسالة التوابع والزوابع، طوق الحمامة، رسالة الغفران.
+- **Français (7)** — Gutenberg : Candide, Les Fleurs du mal, Le Tour du monde en 80 jours, Discours de la méthode, En Kabylie (Vilbort), Contes de Perrault ; Wikisource fr : Contes populaires d’Afrique (Basset).
+- **Anglais (6)** — Gutenberg : Alice, Frankenstein, Sonnets de Shakespeare, Moorish Literature (Basset, contes berbères/kabyles), Pride and Prejudice, Hamlet.
+
+### Recherches / écartés
+- Wikisource kabyle : pas de sous-domaine `kab` ; Wikisource multilingue ne contient que 2 poèmes kabyles du XXe siècle sans statut clair → écartés.
+- Rivière, *Contes populaires de la Kabylie du Djurdjura* (1882) : date de décès du traducteur non vérifiée → retiré par prudence.
+- MMS-TTS kabyle : pas d’ONNX publié, licence CC BY-NC → non intégré.
+
+### Bugs corrigés pendant la v1
+- Script de récupération bloqué indéfiniment sur Gutendex → délai d’expiration de 90 s + repli direct sur gutenberg.org (métadonnées du lot, statut vérifié au préalable).
+- Noms de fichiers en caractères arabes → identifiants ASCII (`ws-ar-<pageid>`).
+- Restes de wikitexte (catégories `[[…]]`, « نزل نسخة مطبوعة ») et URL encodées dans les en-têtes → nettoyés.
+- Sélecteur de vue visible malgré `hidden` (conflit CSS) → règle `[hidden]{display:none!important}`.
+- En-tête français d’un livre arabe affiché à droite → direction `auto` par paragraphe.
+- Découpage des phrases coupait les URL → coupure seulement si ponctuation suivie d’un espace.
+- `idbGet` renvoyait l’objet requête au lieu de `undefined` → la traduction plantait au premier lancement.
+- Traductions non affichées pendant la première traduction et non restaurées après rechargement (langue/modèle oubliés) → corrigé.
+
+### Résultats des tests de traduction
+- Node, NLLB q8, une phrase par paire (voir `scripts/test-translation-result.txt`) : FR→EN, EN→FR, KAB→FR, KAB→AR corrects ; FR→KAB, EN→KAB, AR→KAB approximatifs ; **AR→EN : charabia** ; EN→AR : répétition (« بدأت بدأت »). 2 à 5 s par phrase sur CPU.
+- Navigateur (Chrome headless, WASM) : Marian FR→EN 36 paragraphes OK ; NLLB FR→KAB 4 paragraphes OK mais hallucinations répétitives sur les lignes très courtes (titres de l’en-tête Gutenberg).
+
+### Prochaines étapes
+- Trouver des textes kabyles au statut clair (Boulifa 1904 ? Ben Sedira 1887 ? contes de Mouliéras 1893-1897, en vérifiant l’OCR) et les corriger à la main.
+- Ajouter Standard Ebooks, Open Library (liens de lecture uniquement si texte libre), Hindawi (vérifier la licence au cas par cas).
+- Ignorer l’en-tête/licence Gutenberg lors de la traduction ; limiter les répétitions (`no_repeat_ngram_size`, `repetition_penalty`).
+- Tester sur Android/iOS réels, avec de vraies voix ; essayer WebGPU.
+- Conversion ONNX de MMS-TTS kab (usage non commercial) et test dans Transformers.js.
+- Faire relire l’interface kabyle par des locuteurs natifs.
